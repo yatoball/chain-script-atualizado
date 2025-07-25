@@ -21,8 +21,23 @@ local function colocarNome(obj, texto, cor)
     if not obj then return end
     local adornee = obj
     if obj:IsA("Model") then
-        adornee = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head") or obj:FindFirstChild("Gear") or obj:FindFirstChildWhichIsA("BasePart")
-        if not adornee then return end
+        adornee = obj:FindFirstChild("GearMain")
+            or obj:FindFirstChild("HumanoidRootPart")
+            or obj:FindFirstChild("Head")
+            or obj:FindFirstChild("Gear")
+            or obj:FindFirstChildWhichIsA("BasePart")
+        -- Se GearMain existe mas não é BasePart, tenta pegar um BasePart dentro dele
+        if adornee and adornee.Name == "GearMain" and not adornee:IsA("BasePart") and adornee:IsA("Model") then
+            local base = adornee:FindFirstChildWhichIsA("BasePart")
+            if base then
+                print("[DEBUG] GearMain não é BasePart, usando BasePart interno:", base.Name)
+                adornee = base
+            else
+                print("[DEBUG] GearMain não tem BasePart interno!")
+            end
+        end
+        print("[DEBUG] Tentando criar ESP para:", obj.Name, "->", adornee and adornee.Name or "NENHUM", "Tipo:", adornee and adornee.ClassName or "N/A")
+        if not adornee or not adornee:IsA("BasePart") then return end
     end
     if adornee:FindFirstChild("NameESP") then return end
     local esp = Instance.new("BillboardGui")
@@ -46,7 +61,14 @@ end
 local function removerNomeESP(obj)
     if not obj then return end
     if obj:IsA("Model") then
-        local adornee = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head") or obj:FindFirstChild("Gear") or obj:FindFirstChildWhichIsA("BasePart")
+        local adornee = obj:FindFirstChild("GearMain")
+            or obj:FindFirstChild("HumanoidRootPart")
+            or obj:FindFirstChild("Head")
+            or obj:FindFirstChild("Gear")
+            or obj:FindFirstChildWhichIsA("BasePart")
+        if adornee and adornee.Name == "GearMain" and not adornee:IsA("BasePart") and adornee:IsA("Model") then
+            adornee = adornee:FindFirstChildWhichIsA("BasePart")
+        end
         if adornee and adornee:FindFirstChild("NameESP") then adornee.NameESP:Destroy() end
     elseif obj:IsA("BasePart") and obj:FindFirstChild("NameESP") then
         obj.NameESP:Destroy()
