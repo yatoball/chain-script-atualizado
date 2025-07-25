@@ -1,7 +1,8 @@
 --[[
-    ESP Menu por yato
-    Ative/desative ESPs de LootingItems, Zonas e CHAIN
+    Name ESP Menu por yato
+    Ative/desative Name ESPs de LootingItems, Zonas e CHAIN
     Menu persiste após respawn/morte
+    Pressione 'L' para mostrar/ocultar o menu
 --]]
 
 -- Cores
@@ -15,76 +16,44 @@ local corChain = Color3.fromRGB(170, 0, 255)
 -- Estados dos ESPs
 local ativoLoot, ativoZona, ativoChain = true, true, true
 
--- Função universal para encontrar o melhor BasePart para ESP
-local function encontrarBasePart(model, prioridade)
-    if not model:IsA("Model") then return nil end
-    if prioridade then
-        local part = model:FindFirstChild(prioridade)
-        if part and part:IsA("BasePart") then return part end
-    end
-    local gear = model:FindFirstChild("Gear")
-    if gear and gear:IsA("BasePart") then return gear end
-    local root = model:FindFirstChild("HumanoidRootPart")
-    if root and root:IsA("BasePart") then return root end
-    local base = model:FindFirstChildWhichIsA("BasePart")
-    if base then return base end
-    local espPart = Instance.new("Part")
-    espPart.Name = "ESPPart"
-    espPart.Size = Vector3.new(1,1,1)
-    espPart.Transparency = 1
-    espPart.Anchored = true
-    espPart.CanCollide = false
-    espPart.CanQuery = false
-    espPart.CanTouch = false
-    espPart.Parent = model
-    if model.PrimaryPart then
-        espPart.CFrame = model.PrimaryPart.CFrame
-    else
-        espPart.CFrame = model:GetBoundingBox()
-    end
-    return espPart
-end
-
--- Cria ESP
-local function criarESP(obj, texto, cor)
+-- Função universal para colocar nome acima do melhor BasePart
+local function colocarNome(obj, texto, cor)
     if not obj then return end
+    local adornee = obj
     if obj:IsA("Model") then
-        obj = encontrarBasePart(obj)
-        if not obj then return end
+        adornee = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head") or obj:FindFirstChild("Gear") or obj:FindFirstChildWhichIsA("BasePart")
+        if not adornee then return end
     end
-    if obj:FindFirstChild("ESP") then return end
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "ESP"
-    billboard.Adornee = obj
-    billboard.Size = UDim2.new(0, 100, 0, 30)
-    billboard.StudsOffset = Vector3.new(0, 2, 0)
-    billboard.AlwaysOnTop = true
-    billboard.Parent = obj
-    local label = Instance.new("TextLabel", billboard)
+    if adornee:FindFirstChild("NameESP") then return end
+    local esp = Instance.new("BillboardGui")
+    esp.Name = "NameESP"
+    esp.Adornee = adornee
+    esp.Size = UDim2.new(0, 100, 0, 30)
+    esp.StudsOffset = Vector3.new(0, 2, 0)
+    esp.AlwaysOnTop = true
+    esp.Parent = adornee
+    local label = Instance.new("TextLabel", esp)
     label.Size = UDim2.new(1, 0, 1, 0)
     label.BackgroundTransparency = 1
-    label.Text = texto
-    label.TextColor3 = cor
+    label.Text = texto or obj.Name
+    label.TextColor3 = cor or Color3.fromRGB(255, 255, 255)
     label.TextStrokeTransparency = 0.5
     label.TextScaled = true
     label.Font = Enum.Font.SourceSansBold
 end
 
--- Remove ESP
-local function removerESP(obj)
+-- Remove Name ESP
+local function removerNomeESP(obj)
     if not obj then return end
     if obj:IsA("Model") then
-        for _, part in ipairs(obj:GetChildren()) do
-            if part:IsA("BasePart") and part:FindFirstChild("ESP") then
-                part.ESP:Destroy()
-            end
-        end
-    elseif obj:IsA("BasePart") and obj:FindFirstChild("ESP") then
-        obj.ESP:Destroy()
+        local adornee = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head") or obj:FindFirstChild("Gear") or obj:FindFirstChildWhichIsA("BasePart")
+        if adornee and adornee:FindFirstChild("NameESP") then adornee.NameESP:Destroy() end
+    elseif obj:IsA("BasePart") and obj:FindFirstChild("NameESP") then
+        obj.NameESP:Destroy()
     end
 end
 
--- Atualiza ESP dos itens
+-- Atualiza Name ESP dos itens
 local function atualizarLoot()
     local lootFolder = workspace:FindFirstChild("LootingItems")
     if not lootFolder then return end
@@ -92,39 +61,38 @@ local function atualizarLoot()
         for _, item in ipairs(categoria:GetChildren()) do
             if cores[item.Name] then
                 if ativoLoot then
-                    criarESP(item, item.Name, cores[item.Name])
+                    colocarNome(item, item.Name, cores[item.Name])
                 else
-                    removerESP(item)
+                    removerNomeESP(item)
                 end
             end
         end
     end
 end
 
--- Atualiza ESP das zonas principais
+-- Atualiza Name ESP das zonas principais
 local function atualizarZonas()
     local zonasFolder = workspace:FindFirstChild("ExtraDetails")
     if not zonasFolder then return end
     for _, zona in ipairs(zonasFolder:GetChildren()) do
         if ativoZona then
-            criarESP(zona, zona.Name, corZona)
+            colocarNome(zona, zona.Name, corZona)
         else
-            removerESP(zona)
+            removerNomeESP(zona)
         end
     end
 end
 
--- Atualiza ESP do CHAIN
+-- Atualiza Name ESP do CHAIN
 local function atualizarChain()
     local aiFolder = workspace:FindFirstChild("AI")
     if not aiFolder then return end
     local chain = aiFolder:FindFirstChild("CHAIN")
     if chain then
-        local adornee = encontrarBasePart(chain, "HumanoidRootPart")
         if ativoChain then
-            criarESP(adornee, "CHAIN", corChain)
+            colocarNome(chain, "CHAIN", corChain)
         else
-            removerESP(adornee)
+            removerNomeESP(chain)
         end
     end
 end
@@ -161,11 +129,10 @@ end)
 
 -- Função para criar o menu (imgui)
 local lootBtn, zonaBtn, chainBtn
-local frame -- tornar frame acessível globalmente para controle de visibilidade
+local frame
 local function criarMenu()
     local player = game:GetService("Players").LocalPlayer
     local guiParent = player:FindFirstChild("PlayerGui") or player:WaitForChild("PlayerGui")
-    -- Remove menu antigo se existir
     local antigo = guiParent:FindFirstChild("YatoESPMenu")
     if antigo then antigo:Destroy() end
     local ScreenGui = Instance.new("ScreenGui")
@@ -182,14 +149,14 @@ local function criarMenu()
     titulo.Size = UDim2.new(1, 0, 0, 30)
     titulo.Position = UDim2.new(0, 0, 0, 0)
     titulo.BackgroundTransparency = 1
-    titulo.Text = "ESP Menu - by yato"
+    titulo.Text = "Name ESP Menu - by yato"
     titulo.TextColor3 = Color3.fromRGB(255, 255, 255)
     titulo.Font = Enum.Font.SourceSansBold
     titulo.TextSize = 18
     local function atualizarBotoes()
-        lootBtn.Text = "ESP LootingItems: " .. (ativoLoot and "ON" or "OFF")
-        zonaBtn.Text = "ESP Zonas: " .. (ativoZona and "ON" or "OFF")
-        chainBtn.Text = "ESP CHAIN: " .. (ativoChain and "ON" or "OFF")
+        lootBtn.Text = "Name ESP LootingItems: " .. (ativoLoot and "ON" or "OFF")
+        zonaBtn.Text = "Name ESP Zonas: " .. (ativoZona and "ON" or "OFF")
+        chainBtn.Text = "Name ESP CHAIN: " .. (ativoChain and "ON" or "OFF")
     end
     local function criarBotao(texto, ordem, callback)
         local btn = Instance.new("TextButton", frame)
@@ -204,17 +171,17 @@ local function criarMenu()
         btn.MouseButton1Click:Connect(callback)
         return btn
     end
-    lootBtn = criarBotao("ESP LootingItems: ON", 1, function()
+    lootBtn = criarBotao("Name ESP LootingItems: ON", 1, function()
         ativoLoot = not ativoLoot
         atualizarLoot()
         atualizarBotoes()
     end)
-    zonaBtn = criarBotao("ESP Zonas: ON", 2, function()
+    zonaBtn = criarBotao("Name ESP Zonas: ON", 2, function()
         ativoZona = not ativoZona
         atualizarZonas()
         atualizarBotoes()
     end)
-    chainBtn = criarBotao("ESP CHAIN: ON", 3, function()
+    chainBtn = criarBotao("Name ESP CHAIN: ON", 3, function()
         ativoChain = not ativoChain
         atualizarChain()
         atualizarBotoes()
@@ -258,7 +225,6 @@ local function garantirMenu()
     end
 end
 
--- Recria menu e ESPs após respawn
 player.CharacterAdded:Connect(function()
     wait(1)
     garantirMenu()
@@ -267,7 +233,6 @@ player.CharacterAdded:Connect(function()
     atualizarChain()
 end)
 
--- Recria menu se for removido do PlayerGui
 local guiParent = player:FindFirstChild("PlayerGui") or player:WaitForChild("PlayerGui")
 guiParent.ChildRemoved:Connect(function(child)
     if child.Name == "YatoESPMenu" then
